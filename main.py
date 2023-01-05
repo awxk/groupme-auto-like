@@ -8,7 +8,8 @@ LICENSE file in the root directory of this source tree.
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
 import time
 
@@ -26,8 +27,9 @@ driver = webdriver.Chrome(options=chrome_options)
 # Go to GroupMe login page
 driver.get("https://web.groupme.com/signin")
 
-# Wait for page to load
-time.sleep(5)
+WebDriverWait(driver, 5).until(
+    lambda d: d.find_element(By.ID, "signinUserNameInput")
+)
 
 # Enter username and password
 email_or_phone_input = driver.find_element(By.ID, "signinUserNameInput")
@@ -42,44 +44,53 @@ driver.find_element(By.CSS_SELECTOR, "button[type='submit']").click()
 time.sleep(5)
 
 # Enter 2FA code
-code_input = driver.find_element(
-    By.CSS_SELECTOR, 'input[ng-model="enteredPIN"]')
+code_input_field = WebDriverWait(driver, 5).until(
+    lambda driver: driver.find_element(
+        By.CSS_SELECTOR, 'input[ng-model="enteredPIN"]')
+)
 code = input('Enter 2FA code: ')
-code_input.send_keys(code)
+code_input_field.send_keys(code)
 
 # Submit form
 driver.find_element(By.XPATH, '//button[text()="Verify"]').click()
 
-# Wait for GroupMe to load
-time.sleep(5)
-
-# Click on "Chats" button
-chats_button = driver.find_element(By.XPATH, '//button[@aria-label="Chats"]')
+# Wait for the "Chats" button to be clickable and click it
+chats_button = WebDriverWait(driver, 5).until(
+    EC.element_to_be_clickable((By.XPATH, '//button[@aria-label="Chats"]')))
 chats_button.click()
 
-# Wait for chats to load
-time.sleep(5)
+# Wait for the chat links to be present
+chat_links = WebDriverWait(driver, 5).until(
+    lambda driver: driver.find_elements(
+        By.XPATH, '//button[starts-with(@aria-label, "Chat")]')
+)
 
-# Find chat with the title
-chat_link = driver.find_element(
-    By.XPATH, f'//button[@aria-label="Chat {chat_name}"]')
-
-# Click on chat to open it
+# Find the link for the chat we want to like all the messages in and click it
+chat_link_xpath = f'//button[@aria-label="Chat {chat_name}"]'
+WebDriverWait(driver, 5).until(
+    EC.element_to_be_clickable((By.XPATH, chat_link_xpath)))
+chat_link = driver.find_element(By.XPATH, chat_link_xpath)
 chat_link.click()
 
-# Wait for chat to load
-time.sleep(5)
+# Wait for the chat container element to be present on the page
+element = WebDriverWait(driver, 5).until(
+    EC.presence_of_element_located(
+        (By.CSS_SELECTOR, '.chat-content .chat-messages'))
+)
 
-# Find chat container element
+# Assign the chat container element to a variable
 chat_container = driver.find_element(
     By.CSS_SELECTOR, '.chat-content .chat-messages')
 
-# Find "like" buttons within the chat container
+# Assign the list of "like" buttons to a variable
 like_buttons = chat_container.find_elements(
     By.XPATH, '//button[@role="checkbox" and @title="Like"]')
 
 # Keep track of the buttons that have been clicked
 clicked_buttons = []
+
+# Set flag to False
+printed = False
 
 # Like every message in the chat
 while len(like_buttons) > 0:
@@ -102,8 +113,12 @@ while len(like_buttons) > 0:
                 # If the button is not clickable, move on to the next button
                 continue
 
-    # Print the number of messages that have been liked
-    print(f"Liked {len(clicked_buttons)} messages so far...")
+    # Print the number of messages that have been liked, but only if the message hasn't been printed yet
+    if not printed:
+        print(f"Liked {len(clicked_buttons)} messages so far...")
+
+        # Set the flag to True
+        printed = True
 
     # Scroll up a full page length in the chat container
     driver.execute_script(
@@ -113,11 +128,9 @@ while len(like_buttons) > 0:
     spinner_present = True
     while spinner_present:
         try:
-
-            # Wait for the spinner to disappear
-            spinner = driver.find_element(
-                By.CSS_SELECTOR, '.chat-loading-visible')
-            time.sleep(1)
+            spinner = WebDriverWait(driver, 1).until(
+            EC.presence_of_element_located(
+                (By.CSS_SELECTOR, '.chat-loading-visible')))
         except:
 
             # If the spinner is not present, the chat has finished loading
@@ -129,6 +142,9 @@ while len(like_buttons) > 0:
     # Find the updated list of "like" buttons
     like_buttons = driver.find_elements(
         By.XPATH, '//button[@role="checkbox" and @title="Like"]')
+
+    # Reset the flag to False
+    printed = False
 
 
 # Print the number of messages that were liked
