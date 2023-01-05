@@ -60,7 +60,7 @@ chats_button.click()
 # Wait for chats to load
 time.sleep(5)
 
-# Find chat with the title "ROTC 🇺🇸 +friends"
+# Find chat with the title
 chat_link = driver.find_element(
     By.XPATH, f'//button[@aria-label="Chat {chat_name}"]')
 
