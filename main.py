@@ -40,9 +40,6 @@ password_input.send_keys(password)
 # Submit form
 driver.find_element(By.CSS_SELECTOR, "button[type='submit']").click()
 
-# Wait for 2FA code prompt
-time.sleep(5)
-
 # Enter 2FA code
 code_input_field = WebDriverWait(driver, 5).until(
     lambda driver: driver.find_element(
