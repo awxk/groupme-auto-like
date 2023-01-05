@@ -13,7 +13,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
 import time
 
-email_or_phone = ""  # phone number
+email_or_phone = ""  # email or phone number
 password = ""        # password
 chat_name = ""       # chat name
 
