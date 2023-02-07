@@ -11,14 +11,14 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
-import time
+from selenium.webdriver.common.keys import Keys
 
 ###################### CONFIGURATION ###########################################
 email_or_phone = ""  # email or phone number
 password = ""        # password
 chat_name = ""       # chat name
-iterations = 1000    # number of times to check for new messages
-# (default: 1000, set to 0 to run indefinitely)
+iterations = 100     # number of times to check for new messages
+# (default: 100, set to 0 to run indefinitely)
 ################################################################################
 
 ###################### NOTES ###################################################
@@ -30,9 +30,7 @@ iterations = 1000    # number of times to check for new messages
 ################################################################################
 
 # Set up headless Chrome browser
-chrome_options = Options()
-chrome_options.add_argument("--headless")
-driver = webdriver.Chrome(options=chrome_options)
+driver = webdriver.Chrome(options=Options().add_argument('--headless'))
 
 # Go to GroupMe login page
 driver.get("https://web.groupme.com/signin")
@@ -42,54 +40,44 @@ WebDriverWait(driver, 5).until(
     lambda d: d.find_element(By.ID, "signinUserNameInput"))
 
 # Enter username and password
-email_or_phone_input = driver.find_element(By.ID, "signinUserNameInput")
-email_or_phone_input.send_keys(email_or_phone)
-password_input = driver.find_element(By.ID, "signinPasswordInput")
-password_input.send_keys(password)
+driver.find_element(By.ID, "signinUserNameInput").send_keys(email_or_phone)
+driver.find_element(By.ID, "signinPasswordInput").send_keys(password)
 
 # Submit form
 driver.find_element(By.CSS_SELECTOR, "button[type='submit']").click()
 
 # Enter 2FA code
-code_input_field = WebDriverWait(driver, 5).until(
-    lambda driver: driver.find_element(
-        By.CSS_SELECTOR, 'input[ng-model="enteredPIN"]'))
 code = input('Enter 2FA code: ')
-code_input_field.send_keys(code)
+WebDriverWait(driver, 5).until(
+    lambda d: d.find_element(
+        By.CSS_SELECTOR, 'input[ng-model="enteredPIN"]')).send_keys(code)
 
 # Submit form
 driver.find_element(By.XPATH, '//button[text()="Verify"]').click()
 
 # Wait for the "Chats" button to be clickable and click it
-chats_button = WebDriverWait(driver, 5).until(
-    EC.element_to_be_clickable((By.XPATH, '//button[@aria-label="Chats"]')))
-chats_button.click()
-
-# Wait for the chat links to be present
-chat_links = WebDriverWait(driver, 5).until(
-    lambda driver: driver.find_elements(
-        By.XPATH, '//button[starts-with(@aria-label, "Chat")]'))
-
-# Find the link for the chat we want to like all the messages in and click it
-chat_link_xpath = f'//button[@aria-label="Chat {chat_name}"]'
 WebDriverWait(driver, 5).until(
-    EC.element_to_be_clickable((By.XPATH, chat_link_xpath)))
-chat_link = driver.find_element(By.XPATH, chat_link_xpath)
-chat_link.click()
+    EC.element_to_be_clickable(
+        (By.XPATH, '//button[@aria-label="Chats"]'))).click()
 
-# Wait for the chat container element to be present on the page
-element = WebDriverWait(driver, 5).until(
-    EC.presence_of_element_located(
-        (By.CSS_SELECTOR, '.chat-content .chat-messages')))
+# Wait for the chat name to be clickable and click it
+WebDriverWait(driver, 5).until(
+    EC.element_to_be_clickable(
+        (By.XPATH, f'//button[contains(.,"{chat_name}")]'))).click()
 
-# Assign the chat container element to a variable
-chat_container = driver.find_element(
-    By.CSS_SELECTOR, '.chat-content .chat-messages')
+# Wait for the chat container to be present and assign it to a variable
+chat_container = WebDriverWait(driver, 5).until(
+    lambda d: d.find_element(
+        By.CSS_SELECTOR, '.chat-content .chat-messages'))
 
 # Assign the list of "like" buttons to a variable
-like_buttons = WebDriverWait(driver, 5).until(
+like_buttons = WebDriverWait(driver, 50).until(
     lambda d: chat_container.find_elements(
         By.XPATH, '//button[@role="checkbox" and @title="Like"]'))
+
+# Assign the message input field to a variable
+message = driver.find_element(
+    By.CSS_SELECTOR, '.message.accessible-focus')
 
 # Keep track of the buttons that have been clicked
 clicked_buttons = []
@@ -104,8 +92,7 @@ while len(like_buttons) > 0:
         if button not in clicked_buttons:
             try:
 
-                # Scroll to the button and click it
-                driver.execute_script("arguments[0].scrollIntoView();", button)
+                # Click the button
                 button.click()
 
                 # Add the button to the list of clicked buttons
@@ -122,6 +109,8 @@ while len(like_buttons) > 0:
         print(f"Liked {len(clicked_buttons)} messages so far...")
         liked_messages = len(clicked_buttons)
 
+        # Scroll to the top of the chat container
+        message.send_keys(Keys.CONTROL + Keys.HOME)
         # Reset the iteration count
         iteration_count = 0
     else:
@@ -134,10 +123,8 @@ while len(like_buttons) > 0:
     if iteration_count >= iterations and iterations != 0:
         break
 
-    # Scroll up a full page length in the chat container
-    driver.execute_script("arguments[0].scrollTop = arguments[0].scrollTop - "
-                          "arguments[0].offsetHeight", chat_container)
-
+    # Scroll to the top of the chat container
+    message.send_keys(Keys.CONTROL + Keys.HOME)
     # Find the updated list of "like" buttons
     like_buttons = WebDriverWait(driver, 5).until(
         lambda d: chat_container.find_elements(
