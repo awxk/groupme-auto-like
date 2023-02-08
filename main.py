@@ -30,7 +30,14 @@ iterations = 100     # number of times to check for new messages
 ################################################################################
 
 # Set up headless Chrome browser
-driver = webdriver.Chrome(options=Options().add_argument('--headless'))
+options = Options()
+options.add_argument("--headless")
+options.add_experimental_option("prefs", {
+  "profile.default_content_setting_values.images": 2,
+  "profile.default_content_setting_values.stylesheet": 2
+})
+driver = webdriver.Chrome(options=options)
+
 
 # Go to GroupMe login page
 driver.get("https://web.groupme.com/signin")
@@ -109,8 +116,7 @@ while len(like_buttons) > 0:
         print(f"Liked {len(clicked_buttons)} messages so far...")
         liked_messages = len(clicked_buttons)
 
-        # Scroll to the top of the chat container
-        message.send_keys(Keys.CONTROL + Keys.HOME)
+
         # Reset the iteration count
         iteration_count = 0
     else:
@@ -121,7 +127,7 @@ while len(like_buttons) > 0:
     # If the number of liked messages has not increased in the set number of
     # iterations, break out of the loop, set iterations to 0 to run indefinitely
     if iteration_count >= iterations and iterations != 0:
-        break
+        break 
 
     # Scroll to the top of the chat container
     message.send_keys(Keys.CONTROL + Keys.HOME)
