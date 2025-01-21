@@ -1,5 +1,5 @@
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-Copyright (c) 2024, Nick Dilday (https://github.com/awxk)
+Copyright (c) 2025, Nic D. (https://github.com/awxk)
 All rights reserved.
 
 This source code is licensed under the BSD-style license found in the
